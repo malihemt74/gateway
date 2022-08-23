@@ -23,7 +23,6 @@ export class AuthenticationService implements OnModuleInit {
 
   async register(registerAuthenticationDto: RegisterAuthenticationDto) {
     const result = this.userService.findOne(registerAuthenticationDto['id']);
-    console.log(result);
     return registerAuthenticationDto;
   }
 
