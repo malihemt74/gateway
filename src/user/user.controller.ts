@@ -21,12 +21,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Metadata } from '@grpc/grpc-js';
+import { Metadata, ServerUnaryCall } from '@grpc/grpc-js';
 
 interface UsersService {
   register(data): Observable<any>;
   login(data): Observable<any>;
-  findAll(meta_data): Observable<any>;
+  findAll(metadata: Metadata): Observable<any>;
   findOne(data: { id: number }): Observable<any>;
   update(data): Observable<any>;
   remove(data: { id: number }): Observable<any>;
@@ -62,10 +62,9 @@ export class UserController implements OnModuleInit {
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Get()
   async findAll(@Req() request) {
-    const meta_data = new Metadata();
-    meta_data.add('Authorization', request.headers.authorization);
-    const result = await this.usersService.findAll(meta_data).pipe(toArray());
-    console.log(result);
+    const metadata = new Metadata();
+    metadata.set('Authorization', request.headers.authorization);
+    const result = await this.usersService.findAll(metadata).pipe(toArray());
     return result;
   }
 
