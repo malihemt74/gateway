@@ -1,34 +1,95 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  OnModuleInit,
+  Inject,
+  Req,
+} from '@nestjs/common';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ClientGrpc } from '@nestjs/microservices';
+import { Observable, toArray } from 'rxjs';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Metadata } from '@grpc/grpc-js';
 
+interface UsersService {
+  register(data): Observable<any>;
+  login(data): Observable<any>;
+  findAll(meta_data): Observable<any>;
+  findOne(data: { id: number }): Observable<any>;
+  update(data): Observable<any>;
+  remove(data: { id: number }): Observable<any>;
+}
+
+@ApiBearerAuth()
+@ApiTags('user')
 @Controller('user')
-export class UserController {
-  constructor(private readonly userService: UserService) {}
+export class UserController implements OnModuleInit {
+  private usersService: UsersService;
+  constructor(@Inject('USER_PACKAGE') private client: ClientGrpc) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  onModuleInit() {
+    this.usersService = this.client.getService<UsersService>('UsersService');
   }
 
+  @ApiOperation({ summary: 'Register' })
+  @Post('register')
+  async register(@Body() registerDto: RegisterDto) {
+    const result = await this.usersService.register(registerDto);
+    return result;
+  }
+
+  @ApiOperation({ summary: 'Login' })
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    const result = await this.usersService.login(loginDto);
+    console.log(result);
+    return result;
+  }
+
+  @ApiOperation({ summary: 'Get all of the users.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Get()
-  findAll() {
-    return this.userService.findAll();
+  async findAll(@Req() request) {
+    const meta_data = new Metadata();
+    meta_data.add('Authorization', request.headers.authorization);
+    const result = await this.usersService.findAll(meta_data).pipe(toArray());
+    console.log(result);
+    return result;
   }
 
+  @ApiOperation({ summary: 'Get one of the users.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const result = await this.usersService.findOne({ id: +id });
+    return result;
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
+  @ApiOperation({ summary: 'Update a user.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @Patch()
+  async update(@Body() updateUserDto: UpdateUserDto) {
+    const result = await this.usersService.update(updateUserDto);
+    return result;
   }
 
+  @ApiOperation({ summary: 'Remove a user.' })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  async remove(@Param('id') id: string) {
+    const result = await this.usersService.remove({ id: +id });
+    return result;
   }
 }
