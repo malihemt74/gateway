@@ -5,7 +5,9 @@ import { grpcOptions } from './grpc.options';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['log', 'error', 'warn'],
+  });
   app.connectMicroservice<MicroserviceOptions>(grpcOptions);
   app.setGlobalPrefix('api/v1/');
   const config = new DocumentBuilder()

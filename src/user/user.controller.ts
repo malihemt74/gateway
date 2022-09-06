@@ -14,22 +14,22 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ClientGrpc } from '@nestjs/microservices';
-import { Observable, toArray } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Metadata, ServerUnaryCall } from '@grpc/grpc-js';
 
 interface UsersService {
   register(data): Observable<any>;
   login(data): Observable<any>;
-  findAll(metadata: Metadata): Observable<any>;
+  findAll(): Observable<any>;
   findOne(data: { id: number }): Observable<any>;
   update(data): Observable<any>;
   remove(data: { id: number }): Observable<any>;
+  checkUserToken(data): Observable<any>;
 }
 
 @ApiBearerAuth()
@@ -58,13 +58,23 @@ export class UserController implements OnModuleInit {
     return result;
   }
 
+  async checkToken(token) {
+    try {
+      const result = await this.usersService.checkUserToken({
+        token: token.replace('Bearer ', ''),
+      });
+      return result;
+    } catch (e) {
+      console.log(e);
+      return { valid: true };
+    }
+  }
+
   @ApiOperation({ summary: 'Get all of the users.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Get()
   async findAll(@Req() request) {
-    const metadata = new Metadata();
-    metadata.set('Authorization', request.headers.authorization);
-    const result = await this.usersService.findAll(metadata).pipe(toArray());
+    const result = await this.usersService.findAll();
     return result;
   }
 
